@@ -328,6 +328,7 @@ if __name__ == "__main__":
     try:
         operatingSystem = platform.system()
         if (operatingSystem == "Linux"):
+            choice = 0
             while choice != 4:
                 menu()
                 try:
