@@ -1,0 +1,29 @@
+---
+- name: Create Add Bridge Script
+  copy:
+    dest: "{{ serverDirectory }}/add-bridge.sh"
+    mode: '700'
+    content: |
+      #!/bin/bash
+      echo 1 > /proc/sys/net/ipv4/ip_forward
+      iptables -A FORWARD -i tun0 -j ACCEPT
+      iptables -t nat -A POSTROUTING -o {{ ipv4Interface }} -j MASQUERADE
+
+- name: Create Remove Bridge Script
+  copy:
+    dest: "{{ serverDirectory }}/remove-bridge.sh"
+    mode: '700'
+    content: |
+      #!/bin/bash
+      echo 0 > /proc/sys/net/ipv4/ip_forward
+      iptables -D FORWARD -i tun0 -j ACCEPT
+      iptables -t nat -D POSTROUTING -o {{ ipv4Interface }} -j MASQUERADE
+
+- name: Append Add Bridge Script to Service Configuration
+  blockinfile:
+    path: /lib/systemd/system/openvpn-server@.service
+    insertafter: ^Restart=on-failure
+    block: |
+      ExecStartPost={{ serverDirectory }}/add-bridge.sh
+      ExecStopPost={{ serverDirectory }}/remove-bridge.sh
+  notify: Restart OpenVPN
